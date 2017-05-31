@@ -1,5 +1,5 @@
-TARGET=h8blue
-EXECUTABLE=h8blue.elf
+TARGET=h8mini
+EXECUTABLE=h8mini.elf
 
 CC=arm-none-eabi-gcc
 LD=arm-none-eabi-gcc
@@ -8,39 +8,36 @@ AS=arm-none-eabi-as
 CP=arm-none-eabi-objcopy
 OD=arm-none-eabi-objdump
 
+
+DEFS = -DUSE_STDPERIPH_DRIVER
+STARTUP = startup.s
+
+MCU = cortex-m3
+MCFLAGS = -mcpu=$(MCU) -mthumb -mlittle-endian -mthumb-interwork -ffast-math -fdata-sections -ffunction-sections
+
 topdir = ..
-
-DEFS = -DUSE_STDPERIPH_DRIVER -DSTM32F031
-STARTUP = $(topdir)/Libraries/CMSIS/Device/ST/STM32F0xx/Source/Templates/gcc_ride7/startup_stm32f030.s
-
-MCU = cortex-m0
-MCFLAGS = -mcpu=$(MCU) -g -ggdb -mthumb -fdata-sections -ffunction-sections -fsingle-precision-constant -ffast-math -nostartfiles   --specs=nano.specs
-
-
-INCLUDES = -I$(topdir)/Silverware/src/ \
-	-I$(topdir)/Libraries/CMSIS/Device/ST/STM32F0xx/Include/ \
-	-I$(topdir)/Libraries/CMSIS/Include/ \
-	-I$(topdir)/Utilities/ \
-	-I$(topdir)/Libraries/STM32F0xx_StdPeriph_Driver/inc/
+INCLUDES = -I$(topdir)/H8mini-test/src/ \
+	-I$(topdir)/H8mini-acro/src/ \
+	-I$(topdir)/CMSIS/ \
+	-I$(topdir)/Peripherals/inc/
 
 OPTIMIZE = -Os
 
-CFLAGS = $(MCFLAGS)  $(OPTIMIZE)  $(DEFS) -I. -I./ $(INCLUDES)  -Wl,-T,flash.ld,-Map,output.map,--gc-sections  -std=gnu99
-
+CFLAGS = $(MCFLAGS) $(OPTIMIZE) $(DEFS) $(INCLUDES) -std=gnu99
 AFLAGS = $(MCFLAGS)
+LDFLAGS = -nostdlib -lm -lnosys -Wl,-T,flash.ld,-Map,$(TARGET).map,--gc-sections,-Os
 
-SRC = $(wildcard $(topdir)/Silverware/src/*.c) \
-	$(wildcard $(topdir)/Silverware/src/*.h) \
-	$(wildcard $(topdir)/Silverware/src/*.cpp) \
-	$(topdir)/Libraries/STM32F0xx_StdPeriph_Driver/src/*.c  \
-	$(topdir)/Utilities/system_stm32f0xx.c \
-	methods.c
+SRC = $(wildcard $(topdir)/H8mini_*/src/*.c) \
+	$(wildcard $(topdir)/H8mini_*/src/config.h) \
+	$(wildcard $(topdir)/H8mini_*/src/*.cpp) \
+	$(wildcard $(topdir)/CMSIS/*.c) \
+	$(wildcard $(topdir)/Peripherals/src/*.c)
+HEADERS = $(wildcard $(topdir)/H8mini_*/src/*.h)
 
 OBJDIR = .
 OBJ = $(patsubst %.c,$(OBJDIR)/%.o,$(filter %.c,$(SRC)))
 OBJ += $(patsubst %.cpp,$(OBJDIR)/%.o,$(filter %.cpp,$(SRC)))
 OBJ += Startup.o
-
 
 all: $(TARGET)
 
@@ -49,11 +46,10 @@ $(TARGET).hex: $(EXECUTABLE)
 $(TARGET): $(EXECUTABLE)
 	$(CP) -O binary $^ $@
 
-$(EXECUTABLE): $(SRC) $(STARTUP)
-	$(CC) $(CFLAGS) $^ -lm -o $@
-	
+$(EXECUTABLE): $(SRC) $(STARTUP) $(HEADERS)
+	$(CC) $(CFLAGS) $^ $(LDFLAGS) -o $@
 
 clean:
-	rm -f Startup.lst $(TARGET) $(TARGET).lst $(OBJ) $(AUTOGEN) \
+	rm -f Startup.lst $(TARGET) $(TARGET).lst $(AUTOGEN) \
 		$(TARGET).out $(TARGET).hex  $(TARGET).map \
 		$(TARGET).dmp $(EXECUTABLE)

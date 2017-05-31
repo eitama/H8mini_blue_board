@@ -1,13 +1,14 @@
 # Install and Flashing Instructions
-The flashing procedure consists of the "unlocking" of the board,as it is read/write protected originally, and flashing the actual firmware. A ST-LINK v2 is used, either clone, original, or Discovery/Nucleo board.
 
-Connections to the programming port require 3 wires, ground, swclk and swdat (swio). While flashing, the quad is powered from its battery.
+Information on Flashing the FC is mostly collected on the [RC Groups Thread](http://www.rcgroups.com/forums/showthread.php?t=2512604), but distributed over hundreds of post. The install instructions in this file consolidate this information.
 
 # Windows
 
-See [RC Groups Thread First Post](http://www.rcgroups.com/forums/showthread.php?t=2634611) for now.
+See [RC Groups Thread First Post](http://www.rcgroups.com/forums/showthread.php?t=2512604) for now.
 
 # Linux
+
+_Note: The newer gcc version 6.x had issues with telemetry and LVC, version 5.4.1 tested ok._
 
 For flashing on Linux, the [OpenOCD](http://openocd.org/) toolchain is used. The install instructions have been tested to work with OpenOCD 0.9.0 on Debian-based systems (Ubuntu 14.04).
 
@@ -39,8 +40,8 @@ apt-get install git build-essential gcc-arm-none-eabi libnewlib-arm-none-eabi
 ```
 Clone the repository:
 ```
-git clone https://github.com/silver13/H8mini_blue_board
-cd H8mini_blue_board
+git clone https://github.com/silver13/h8mini-testing
+cd h8mini-testing
 ```
 Build the firmware:
 ```
@@ -50,30 +51,13 @@ make
 
 ## Flashing
 
-Before being able to flash, the board needs to be unlocked. **This only has to be performed once for every flight controller board.** 
+Before being able to flash, the board needs to be unlocked. **This only has to be performed once for every controller board.** See [Post 2211 and preceding ones on RCGroups for details](http://www.rcgroups.com/forums/showthread.php?t=2512604&page=148#post34798015).
 ```
-openocd -f /usr/share/openocd/scripts/interface/stlink-v2.cfg -f /usr/share/openocd/scripts/target/stm32f0x.cfg -c init -c "reset halt" -c "stm32f0x unlock 0" -c "reset run" -c shutdown
+openocd -s /usr/share/openocd/scripts -f /usr/share/openocd/scripts/interface/stlink-v2.cfg -f /usr/share/openocd/scripts/target/stm32f1x.cfg - debug_level 3 -c init -c "reset halt" -c "mww 0x40022004 0x45670123" -c "mww 0x40022004 0xCDEF89AB" -c "mww 0x40022008 0x45670123" -c "mww 0x40022008 0xCDEF89AB" -c "mww 0x40022010 0x220" -c "mww 0x40022010 0x260" -c "sleep 100" -c "mww 0x40022010 0x230" -c "mwh 0x1ffff800 0x5AA5" -c "sleep 1000" -c "mww 0x40022010 0x2220" -c "sleep 100" -c "mdw 0x40022010" -c "mdw 0x4002201c" -c "mdw 0x1ffff800" -c shutdown
 ```
 
-The board needs a power cycle after unlocking.
 
 Once the board is unlocked, the firmware can be flashed using
 ```
-openocd -f /usr/share/openocd/scripts/interface/stlink-v2.cfg -f /usr/share/openocd/scripts/target/stm32f0x.cfg -c init -c "reset halt" -c "flash write_image erase h8blue 0x08000000" -c "verify_image h8blue 0x08000000" -c "reset run" -c shutdown
+openocd -f /usr/share/openocd/scripts/interface/stlink-v2.cfg -f /usr/share/openocd/scripts/target/stm32f1x.cfg -c init -c "reset halt" -c "flash write_image erase h8mini 0x08000000" -c "verify_image h8mini 0x08000000" -c "reset run" -c shutdown
 ```
-
-## Troubleshooting
-
-It appears that on Ubuntu 14.04, there is an issue with the standard .deb install for the build toolchain. You might get an error saying
-```
-arm-none-eabi-gcc: error: nano.specs: No such file or directory
-```
-In that case, another version of the ggc arm toolchain needs to be installed (see bug reports: [1](https://bugs.launchpad.net/gcc-arm-embedded/+bug/1309060), [2](https://bugs.launchpad.net/gcc-arm-embedded/+bug/1309060)):
-```
-sudo apt-get remove binutils-arm-none-eabi gcc-arm-none-eabi
-sudo add-apt-repository ppa:terry.guo/gcc-arm-embedded
-sudo apt-get update
-sudo apt-get install gcc-arm-none-eabi 
-```
-After this, the "Build the firmware" step above can be performed.
-

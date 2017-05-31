@@ -1,96 +1,159 @@
-[![Build Status](https://travis-ci.org/silver13/H8mini_blue_board.svg?branch=master)](https://travis-ci.org/silver13/H8mini_blue_board)
+[![Build Status](https://travis-ci.org/silver13/h8mini-dual.svg?branch=master)](https://travis-ci.org/silver13/h8mini-dual)
 
-### H8mini Blue board version###
+# Eachine H8 mini level firmware
 
-Specific Blue instructions:
-https://www.rcgroups.com/forums/showthread.php?2721755-H8-blue-board-flashing-instructions#post35501995
+This is a dual mode version of the firmware for Eachine H8 mini / JJRC H8 mini.
+
+**Do not flash the H8 firmware to the H101**
+
+**Do not flash the H8 firmware to the H8S**
+
+The firmware uses cascaded pids in level mode.
+
+For accelerometer calibration move the pitch stick down 3 times within about 1- 2 seconds. Wait a couple of seconds after a failed attempt. Throttle has to be low, and roll centered. Flashing lights indicate the calibration process. This is saved so it has to be done only once.
+
+To set / reset AUX1 channel use left - left - down (off) or right - right - down (on). The leds flash if a gesture is detected.
+
+Do not switch into level mode while upside down.
+
+##### Stock tx:
+On the stock tx only the rate (expert) button works, and level/ acro mode is changed by gestures (default) as described above.
+To start in acro mode by default with CH_AUX1 enabled comment out *#define AUX1_START_ON* in config.h.
+
+Trim buttons can be used as extra channels, with trimup = on, trimdown = off, if set appropriately in config.h. *#define USE_STOCK_TX* should be uncommented also, to enable trims. Please note, enabling trims is not compatible with devo tx.
+
+Some stock tx have bad centering, and can be 5% or more offset in one direction. They also have deadzone ( it does not remove the bad centering). For this , *STOCK_TX_AUTOCENTER* should be enabled, and will remove the center biases when the quad throttle is zero for more then 1 second. (after the lights go solid)
+
+Quick settings: 
+* enable *STOCK_TX_AUTOCENTER*
+* enable *USE_STOCK_TX* if use of trim buttons is required
+* enable expo if you wish by commenting out *DISABLE_EXPO*
 
 
-From rcg user __kmtam__
-> Hi all, I finally got the h8mini blue board erased and flashed to Silverxxx firmware after zillion times of tried and error.
-> The board's labelled wrong with the CLK and DAT got swapped....
-> 
-> This is how I got it work from the STLINK to the H8mini blue board:
-> SWDIO->CLK
-> GND->GND
-> SWCLK->DAT
-> 
-> Thanks Silverxxx for this wonderful firmware! Cheers! 
 
-From rcg user __ketsa__
-> Thanks!!! I finally managed to flash my blue board.
-> 
-> It was not straightforward, I tried the suggested connections and was still getting "ST-LINK USB communication error."
-> 
-> I then found a file in my keil directory named "ST-LinkUpgrade.exe" So I Upgraded the FW of my ST-link to "V2.J24.S4 > > > STM32+STM8 Debugger"
-> 
-> Then i was getting a different message : "no target" hmm. progress. but still not flashing.
-> Then I removed the battery, plugged it in and it erased !
-> 
-> I tried to flash : "no target."
-> 
-> Replug battery, and it flashed !
+##### Devo tx:
+Channels work as intended except the rate/expert channel which is always on. Dynamic trims are not used. If gestures are to be used make sure the tx can reach at least 80% of max rates ( high rates on).
 
-From rcg user __silverxxx__
-> I made a blue board quad to see what's happening with the flashes.
-> 
-> So far I found out that it does indeed stop working after the st-link gets disconnected from usb.
-> This seems some software issue, maybe with keil.
-> 
-> The st-link starts working after it is used in some other way , such as: flash another quad with keil(not blue board) , use > the "st-link utility" and connect to a board(even blue), use openocd and connect to a board (even blue).
-> 
-> After the "st-link usb communication error" comes up , you have to disconnect the st-link and reconnect it, or the above > fixes do not work.
-> 
-> Another find was that the nucleo built in st-link does not have this issue. It also does not get detected by the st-link firmware updater. A nucleo board is about $12
-> 
-> I'll have to find a more permanent solution, although openocd could be made a shortcut. 
+In config.h channel names DEVO_CHAN_5 - DEVO_CHAN_10 can also be used , and correspond to internal devo numbers.
 
-_The last 2 posts refer to windows and keil only_
+Assign the extra channels to desired functions in config.h, mainly the level / acro mode change function should be set to a switch rather than gestures which is default.
 
-This port supports both acro only and dual mode. To enable acro only, an option exist in config.h.
+Please note, using trims as a channel is only intended for the stock tx, and will produce erroneous results if used with Devo tx. For this reason, *#define USE_STOCK_TX* is commented out, and disables incompatible options.
+ 
+Devo tx support is ok by default. 
 
-The H8 board - blue version - uses a stm32f030 and a XN297L 3 wire radio. The XN297L is differerent from the XN297 in that is supports 250K rate, and the debug registers are different.  [XN297L datasheet](https://drive.google.com/file/d/0B3AKcbg1PFrnbHRXMzUzUUFmUFk/view?pref=2&pli=1) (use google translate)
+##### Gyro calibration
+Gyro calibration runs automatically after power up, and usually completes within 2-4 seconds. If for some reason the calibration fails to complete, such as if there is movement, it will eventually time out in 15 seconds.
 
-### Flashing instructions
-CG023 instructions:
-http://www.rcgroups.com/forums/showthread.php?t=2634611
+During calibration the leds flash in an "X" like pattern. If movement is detected the flashing stops and only 2 leds illuminate. The flashing resumes when movement stops.
 
-Specific Blue instructions:
-https://www.rcgroups.com/forums/showthread.php?2721755-H8-blue-board-flashing-instructions#post35501995
+##### Accelerometer calibration
+For accelerometer calibration move the pitch stick down 3 times within about 1- 2 seconds. Wait a couple of seconds after a failed attempt. Throttle has to be low, and roll centered. Flashing lights indicate the calibration process. This is saved so it has to be done only once.
 
-### Linux/gcc version
-The gcc version compiles close to 16k, and may need turning off features in order to make it fit. Read __install.md__ for additional information.
+Note, the acc calibration also saves gyro biases which are used in some cases. The flash pattern is similar to the gyro calibration pattern.
 
-### Wiki
+*Calibration has to be done on a horizontal surface*
+
+The calibration does not get erased between firmware flashes unless "erase" is used in the relevant menu.
+
+##### Led error codes
+In some cases the leds are used to indicate error conditions, and as such they flash a number of times, then a brake occurs, then the pattern repeats. In all such cases the quadcopter will not respond to commands, a power cycle will be required.
+
+The most common of this is 2 flashes = low battery, usually caused by an in-flight reset due to low battery. All other flashes are non user serviceable. The description is in main.c.
+
+##### Led flash patterns
+At startup the leds should flash a gyro calibration pattern for 2 - 15 seconds, in a cross like pattern. Movement stops the flashing while it occurs.
+
+Following should be a fast (20 times/sec) flash indicating that the quad is waiting for bind. 
+
+If binding is completed the leds should light up continuously, while if tx connection is lost they will flash a short time a couple of times / second.
+
+Overriding all this patterns except gyro calibration, is the low battery flash which is a slow, equally spaced on and off flash. 
+
+
+### Linux support
+See post by :
+http://www.rcgroups.com/forums/showpost.php?p=34293596&postcount=1248
+
+Read [INSTALL.md](INSTALL.md) for more information.
+
+
+###Wiki
 http://sirdomsen.diskstation.me/dokuwiki/doku.php?id=start
 
-### Updates:
+### 31.10.16
+* level code optimizations
+* added auto battery voltage drop calculation , enabled by default
 
-### 01.12.16
-* devo telemetry
-* high angle - up to 90 in level mode
-* autovdrop
-* trims on stock tx for switching
+### .10.16
+* level mode drift bug fix
+* buzzer functionality added, on programming pins
+* board rotations in file sixaxis.c
 
-### 11.08.16
-* added tx autocenter for stock tx
-* added extra devo channels that were MIA
-* bluetooth beacon was added previously
+### 16.09.16
+* High angle in level mode - up to 90 
+* Yaw fix - level mode
 
-### 03.07.16
-* added updates from cg023 build
-* now using hardware i2c for full speed (1 Mhz)
+### 21.07.16
+* updates from h101 fork
+* added extra devo channels
+* "prevent_reset" option which lowers throttle to kkep voltage up
+* "motor_beeps"
+* other changes to make fork differences smaller
 
-### 30.05.16
-* fixed low rates control issue in yaw+roll
+### 1.05.16
+* ENABLESTIX feature now works correctly, wait 1 second on ground for it to deactivate
+* gyro pll set to a different setting
+* 8.5 mm motor curve redone ( old curve renamed _OLD)
+* other changes
 
-### 19.05
+
+### 16.04.16
+* added auto flips
+* headless mode now works in both level and acro mode.
+* fixed an issue with powering up on a non horizontal surface in level mode (drift)
+* manual trim values can now be entered in config.h for level mode
+* fixed an bug in "auto lower throttle" which would have caused a corner dip
+
+### 19.02.16
+* added "STOCK_TX_AUTOCENTER", recommended to enable for stock tx
+* added use of trim buttons as extra channels ( by balrog-kun )
+
+### 09.02.16
+* fixed "gyro not found" in debug mode / after flashing (hopefully)
+* selectable motor curves, also with 8.5mm hubsan motors support
+* pwm frequency in config.h (now set to 16k)
+* "invert yaw option" for hubsan motors/other builds that have spinning yaw
+
+### 05.02.16
+* added linux compilation support by balrog-kun
+* (option) added throttle transient compensation 
+* (option) added "anti-clipping" with feedforward 
+* new options disabled by default
+
+### 25.1.16
+* (option) selectable software gyro filter
+* (option) auto throttle lowering to prevent control issues when near full throttle
+* (option) throttle angle compensation for level mode
+* new options all disabled by default
+* rearranged config.h
+
+### 23.1.16
+* bias fix for larger gyro biases that can occur sometimes 
+
+### 13.1.16
+* clock setting fix
+* pid's are now compatible with the acro only version 
+* only rate d term is affected, new kd = old kd * 2.5
+* 8Khz pwm used instead of 490Hz
+* 1ms loop time, fixed
+* level mode switch set to gestures by default
+
+### 28.12.15
+* a battery low warning fix
+* some level mode settings changed ( acc filter time, acc lpf )
+
+### 23.12.15
 * added gestures
-* changed imu from the experimental one that somehow made it in, to the old one
+* fix battery low hysteresys bug
 
-### 11.05
-* added linux compilation support
-
-### 10.05
-* minor update
-* additional protocols now work
